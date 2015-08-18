@@ -21,7 +21,10 @@ class DottedNone(object):
     """Helper for templating"""
 
     def __getattr__(self, name):
-        return None
+        return self
+
+    def __repr__(self):
+        return ""
 
 
 class DotAccessDict(dict):
@@ -40,7 +43,7 @@ def add_dot_access(item):
     transform each dictionary in the given data structure into a DotAccessDict
     recursively, in order to allow easier expressions in templates.
     """
-    if isinstance(item, dict):
+    if isinstance(item, dict) or isinstance(item, DotAccessDict):
         return DotAccessDict(
             {k: add_dot_access(v) for k, v in item.iteritems()})
     elif isinstance(item, (list, tuple)):
@@ -239,6 +242,9 @@ def get_riemann_event(configuration, value):
             ttl=configuration.hb_ttl,
             attributes=configuration.hb_attribute)
     else:
+        # add the host
+        value['host'] = configuration.host
+
         event = dict(
             time=int(value['time']),
             host=configuration.host,
@@ -248,11 +254,21 @@ def get_riemann_event(configuration, value):
             state=configuration.state.format(**value),
             tags=[tag.format(**value) for tag in configuration.tag],
             ttl=configuration.ttl,
-            attributes={k: v.format(**value) for k, v in configuration.attribute})
+            attributes={k: v.format(**value) for k, v in configuration.attribute.iteritems()})
 
     log.debug("Generated event %s", event)
 
     return event
+
+
+def validate_riemann_response(client, response):
+    if not isinstance(client.transport, riemann_transport.TCPTransport):
+        return True
+
+    if response and response.ok:
+        return True
+
+    return False
 
 
 def send_to_riemann(riemann_url, event):
@@ -263,7 +279,7 @@ def send_to_riemann(riemann_url, event):
             with riemann_connect(riemann_url) as client:
                 res = client.event(**event)
 
-                if isinstance(client.transport, riemann_transport.TCPTransport) and not res or not res.ok:
+                if not validate_riemann_response(client, res):
                     log.error("can't send event to riemann: %s", res)
             break
         except socket.error as e:
