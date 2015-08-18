@@ -10,7 +10,7 @@ with open(os.path.join(os.path.dirname(__file__), "VERSION")) as ff:
 with open(os.path.join(os.path.dirname(__file__), "requirements.txt")) as ff:
     requirements = [x for x in ff if x and re.match('^\s*\w.*', x)]
 
-setup(name='riemann_docker',
+setup(name='docker_riemann',
       version=VERSION,
       description='Docker to riemann event router',
       author='Antonio Valente',
@@ -22,7 +22,7 @@ setup(name='riemann_docker',
 
       entry_points={
           'console_scripts': [
-              "riemann-docker=riemann_docker:main"
+              "docker-riemann=docker_riemann:main"
           ]
       }
 )

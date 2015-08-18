@@ -1,0 +1,22 @@
+# Python compiled files
+*.pyc
+*.pyo
+
+# Virtualenv
+env/
+*-env/
+*.egg-info/
+
+# Editor files
+.*.sw?
+.idea/
+
+# Test outputs
+nosetests.xml
+.coverage
+
+# Build files
+.tox/
+build/
+dist/
+docs/_build/
