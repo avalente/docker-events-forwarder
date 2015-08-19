@@ -12,6 +12,7 @@ from riemann_client import transport as riemann_transport, client as riemann_cli
 
 
 MAX_ERRORS = 5
+DEFAULT_EVENTS = "create,destroy,die,kill,oom,pause,restart,start,stop,unpause"
 
 
 log = logging.getLogger("riemann_docker")
@@ -65,18 +66,23 @@ def riemann_connect(riemann_url):
     return riemann_client.Client(transport_cls(parsed.hostname, parsed.port))
 
 
-def event_producer(docker_url, queue, monitor):
+def event_producer(docker_url, queue, monitor, events):
     try:
         client = Client(base_url=docker_url, version="auto")
 
-        for raw_event in client.events(decode=True):
+        if events:
+            filters = dict(event=events)
+        else:
+            filters = None
+
+        for raw_event in client.events(decode=True, filters=filters):
             log.debug("Received event %s", raw_event)
 
             event = DotAccessDict(
                 time=raw_event['time'],
                 container_id=raw_event['id'],
                 status=raw_event['status'],
-                image=raw_event['from'],
+                image=raw_event.get('from'),
                 details={})
 
             if raw_event['status'] != 'destroy':
@@ -104,8 +110,9 @@ def event_producer(docker_url, queue, monitor):
         monitor.set()
 
 
-def start_producer(docker_host, queue, monitor):
-    thread = threading.Thread(target=event_producer, args=(docker_host, queue, monitor))
+def start_producer(docker_host, queue, monitor, events):
+    thread = threading.Thread(target=event_producer,
+                              args=(docker_host, queue, monitor, events))
     thread.daemon = True
     thread.start()
     return thread
@@ -162,6 +169,10 @@ def parse_command_line():
     parser.add_argument("--hb-attribute", help="Heartbeat attribute (can be specified multiple times",
                         type=string_pair, action="append")
 
+    parser.add_argument("--events",
+                        help="Comma-separated list of events to subscribe to. Defaults to %s" % DEFAULT_EVENTS,
+                        default=DEFAULT_EVENTS)
+
     args = parser.parse_args()
     if args.hb_attribute is None:
         args.hb_attribute = {}
@@ -176,6 +187,8 @@ def parse_command_line():
     args.tag = args.tag or []
     args.hb_tag = args.hb_tag or []
 
+    args.events = [x.strip() for x in args.events.split(",")]
+
     return args
 
 
@@ -188,7 +201,7 @@ def main():
 
     monitor = threading.Event()
 
-    producer = start_producer(args.docker_host, queue, monitor)
+    producer = start_producer(args.docker_host, queue, monitor, args.events)
 
     if args.hb_service:
         hb_interval = args.hb_ttl / 2
