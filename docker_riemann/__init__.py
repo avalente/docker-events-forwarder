@@ -15,7 +15,7 @@ MAX_ERRORS = 5
 DEFAULT_EVENTS = "create,destroy,die,kill,oom,pause,restart,start,stop,unpause"
 
 
-log = logging.getLogger("riemann_docker")
+log = logging.getLogger("docker-events-forwarder")
 
 
 class DottedNone(object):
@@ -158,7 +158,7 @@ def parse_command_line():
     parser.add_argument("--attribute", "-a", help="Event attribute (can be specified multiple times",
                         type=string_pair, action="append")
 
-    parser.add_argument("--hb-service", help="Heartbeat service", default="riemann-docker-agent")
+    parser.add_argument("--hb-service", help="Heartbeat service", default="docker-events-forwarder")
     parser.add_argument("--hb-ttl", help="Heartbeat TTL", default=60.0, type=float)
     parser.add_argument("--hb-description", help="Heartbeat description",
                         default="docker-agent is alive")
