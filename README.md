@@ -95,7 +95,7 @@ the *"--hb-ttl"* parameter:
 
 #### Example
 
-    $ docker-riemann --riemann-url=udp://localhost:5555 --host my.host -t docker -t 'docker-{status}' -d 'Docker events for container {name} created on {details.Created} with logging on {details.HostConfig.LogConfig.Type}' -a docker-host={host} -a non-existing-value={details.not_found} -v --hb-service=
+    $ docker run --rm  docker-events-forwarder --docker-host=$DOCKER_HOST --riemann-url=udp://localhost:5555 --host my.host -t docker -t 'docker-{status}' -d 'Docker events for container {name} created on {details.Created} with logging on {details.HostConfig.LogConfig.Type}' -a docker-host={host} -a non-existing-value={details.not_found} -v --hb-service=
     INFO:riemann_docker:heartbeat disabled
     INFO:requests.packages.urllib3.connectionpool:Starting new HTTP connection (1): 192.168.59.103
     DEBUG:requests.packages.urllib3.connectionpool:"GET /version HTTP/1.1" 200 148
